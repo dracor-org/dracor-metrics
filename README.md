@@ -65,6 +65,7 @@ content-type: application/json; charset=utf-8
         }
     },
     "numConnectedComponents": 1,
+    "numEdges": 4,
     "size": 4
 }
 ```
