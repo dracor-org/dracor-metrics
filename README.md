@@ -1,6 +1,6 @@
 # DraCor Metrics Service
 
-Micro service calculating network metrics for dracor.org.
+Microservice calculating network metrics for dracor.org.
 
 ## Getting started
 
