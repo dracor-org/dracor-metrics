@@ -82,3 +82,7 @@ The metrics service can also be run in a docker container:
 docker build -t dracor/metrics .
 docker run -p 8030:8030 --rm dracor/metrics
 ```
+
+### License
+
+dracor-metrics [MIT licensed](./LICENSE).
