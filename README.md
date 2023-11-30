@@ -11,7 +11,7 @@ supported Python version for now.*
 ```bash
 git clone https://github.com/dracor-org/dracor-metrics.git
 cd dracor-metrics
-pipenv install
+pipenv install --python 3.11
 pipenv run hug -f main.py -p 8030
 ```
 
