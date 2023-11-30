@@ -83,6 +83,6 @@ docker build -t dracor/metrics .
 docker run -p 8030:8030 --rm dracor/metrics
 ```
 
-### License
+## License
 
 dracor-metrics [MIT licensed](./LICENSE).
