@@ -2,6 +2,10 @@
 
 Microservice calculating network metrics for dracor.org.
 
+*Note: dracor-metrics does not yet run with Python 3.12. Since, via hug, we
+depend on distutils, which have been removed from 3.12, 3.11 is the latest
+supported Python version for now.*
+
 ## Getting started
 
 ```bash

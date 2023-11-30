@@ -1,7 +1,6 @@
+# hug depends on distutils which has been removed in python 3.12
+# so we are stuck with 3.11 for now
 FROM python:3.11-slim
-
-# WORKDIR /home/dracor
-# RUN git clone https://github.com/dracor-org/dracor-metrics.git --branch python
 
 WORKDIR /dracor-metrics
 
