@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.11-slim
 
 # WORKDIR /home/dracor
 # RUN git clone https://github.com/dracor-org/dracor-metrics.git --branch python
