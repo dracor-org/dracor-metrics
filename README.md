@@ -1,6 +1,6 @@
 # DraCor Metrics Service
 
-Micro service calculating network metrics for dracor.org.
+Microservice calculating network metrics for dracor.org.
 
 ## Getting started
 
@@ -65,6 +65,7 @@ content-type: application/json; charset=utf-8
         }
     },
     "numConnectedComponents": 1,
+    "numEdges": 4,
     "size": 4
 }
 ```
@@ -74,6 +75,6 @@ content-type: application/json; charset=utf-8
 The metrics service can also be run in a docker container:
 
 ```bash
-docker build -t dracor/metrics
+docker build -t dracor/metrics .
 docker run -p 8030:8030 --rm dracor/metrics
 ```
