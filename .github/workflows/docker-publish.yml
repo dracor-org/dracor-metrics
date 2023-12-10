@@ -39,6 +39,7 @@ jobs:
         with:
           images: dracor/metrics
           tags: |
+            type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
 
