@@ -79,10 +79,10 @@ content-type: application/json; charset=utf-8
 The metrics service can also be run in a docker container:
 
 ```bash
-docker build -t dracor/metrics .
+docker pull dracor/metrics
 docker run -p 8030:8030 --rm dracor/metrics
 ```
 
 ## License
 
-dracor-metrics [MIT licensed](./LICENSE).
+dracor-metrics is [MIT licensed](./LICENSE).
