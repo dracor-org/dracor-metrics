@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dracor-metrics"
-version = "1.3.2"
+version = "1.3.3"
 description = "Microservice calculating network metrics for dracor.org."
 authors = ["Carsten Milling <cmil@hashtable.de>"]
 license = "MIT"
