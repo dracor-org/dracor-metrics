@@ -1,13 +1,16 @@
 """DraCor metrics service"""
+import importlib
 import hug
 import networkx as nx
 
+
+__version__ = importlib.metadata.version("dracor-metrics")
 
 @hug.get('/')
 def root():
     return {
         'service': 'dracor-metrics',
-        'version': '1.3.2'
+        'version': __version__
     }
 
 

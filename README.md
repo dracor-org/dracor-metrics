@@ -11,8 +11,8 @@ supported Python version for now.*
 ```bash
 git clone https://github.com/dracor-org/dracor-metrics.git
 cd dracor-metrics
-pipenv install --python 3.11
-pipenv run hug -f main.py -p 8030
+poetry install
+poetry run hug -f app/main.py -p 8030
 ```
 
 This runs a local development server at http://localhost:8030.
@@ -23,9 +23,9 @@ like this:
 ```
 $ http POST :8030/metrics 'segments:=[{"speakers": ["a", "b", "c"]}, {"speakers": ["a", "d"]}]'
 HTTP/1.0 200 OK
-Date: Wed, 19 Jun 2019 14:59:16 GMT
-Server: WSGIServer/0.2 CPython/3.7.3
-content-length: 714
+Date: Wed, 13 Dec 2023 08:14:31 GMT
+Server: WSGIServer/0.2 CPython/3.11.6
+content-length: 729
 content-type: application/json; charset=utf-8
 
 {
