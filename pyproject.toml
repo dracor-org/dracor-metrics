@@ -8,7 +8,7 @@ readme = "README.md"
 packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "~3.11"
 hug = "^2.6.1"
 networkx = "^3.2.1"
 waitress = "^2.1.2"
