@@ -9,13 +9,37 @@ packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "~3.11"
-hug = "^2.6.1"
 networkx = "^3.2.1"
-waitress = "^2.1.2"
+fastapi = "^0.105.0"
+uvicorn = {extras = ["standard"], version = "^0.24.0"}
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4.3"
+httpx = "^0.25.2"
+pytest-cov = "^4.1.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+# pytest
+# Ref: https://docs.pytest.org/en/stable/customize.html
+# ------------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = ["-ra", "--showlocals"]
+filterwarnings = ["error"]
+testpaths = "tests"
+
+# coverage.py
+# Ref: https://coverage.readthedocs.io/en/latest/config.html
+# ------------------------------------------------------------------------------
+
+[tool.coverage.run]
+branch = true
+parallel = true
+source = ["app"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true

@@ -17,4 +17,5 @@ jobs:
           python-version: "3.11"
           cache: poetry
       - run: poetry install
-      - run: poetry run pytest
+      - run: poetry show --tree
+      - run: poetry run pytest --cov

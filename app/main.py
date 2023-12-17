@@ -1,28 +1,30 @@
 """DraCor metrics service"""
+
 import importlib
-import hug
 import networkx as nx
+from fastapi import FastAPI
+
+from .models import Segments, ServiceMetadata, PlayMetrics, NodeInPlayMetrics
+
+__version__: str = importlib.metadata.version("dracor-metrics")
+
+app = FastAPI()
 
 
-__version__ = importlib.metadata.version("dracor-metrics")
-
-@hug.get('/')
-def root():
-    return {
-        'service': 'dracor-metrics',
-        'version': __version__
-    }
+@app.get("/")
+async def root() -> ServiceMetadata:
+    return ServiceMetadata(version=__version__)
 
 
-@hug.post('/metrics')
-def metrics(segments):
+@app.post('/metrics')
+async def metrics(segments: Segments) -> PlayMetrics:
     """Calculates network metrics for play"""
 
     G = nx.Graph()
 
     weights = {}
-    for seg in segments:
-        speakers = seg.get('speakers', [])
+    for seg in segments.segments:
+        speakers = seg.speakers
         length = len(speakers)
         # if segment has only one speaker we add her as a node to make sure she
         # is included in the graph even if she has no connections
@@ -59,30 +61,28 @@ def metrics(segments):
         ec = {}
 
     for n, d in G.degree():
-        nodes[n] = {
-            'degree': d,
-            'weightedDegree': wd[n],
-            'betweenness': bc[n],
-            'closeness': cc[n]
-        }
+        node_metrics = NodeInPlayMetrics(
+            degree=d,
+            weightedDegree=wd[n],
+            betweenness=bc[n],
+            closeness=cc[n],
+            eigenvector=None,
+        )
+        nodes[n] = node_metrics
         if n in ec:
-            nodes[n]['eigenvector'] = ec[n]
+            nodes[n].eigenvector = ec[n]
 
-    return {
-        'size': size,
-        'density': nx.density(G),
-        'diameter': max(path_lengths) if len(path_lengths) else 0,
-        'averagePathLength': (sum(path_lengths) / len(path_lengths))
+    return PlayMetrics(
+        size=size,
+        density=nx.density(G),
+        diameter=max(path_lengths) if len(path_lengths) else 0,
+        averagePathLength=(sum(path_lengths) / len(path_lengths))
         if len(path_lengths) else 0,
-        'averageDegree': sum([d for n, d in G.degree()]) / size,
-        'averageClustering': nx.average_clustering(G),
-        'maxDegree': max_degree,
-        'maxDegreeIds': max_degree_ids,
-        'numConnectedComponents': nx.number_connected_components(G),
-        'numEdges': G.number_of_edges(),
-        'nodes': nodes
-    }
-
-
-if __name__ == '__main__':
-    metrics.interface.cli()
+        averageDegree=sum([d for n, d in G.degree()]) / size,
+        averageClustering=nx.average_clustering(G),
+        maxDegree=max_degree,
+        maxDegreeIds=max_degree_ids,
+        numConnectedComponents=nx.number_connected_components(G),
+        numEdges=G.number_of_edges(),
+        nodes=nodes
+    )
