@@ -7,6 +7,12 @@ on:
   pull_request:
 
 jobs:
+
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pre-commit/action@646c83fcd040023954eafda54b4db0192ce70507 # v3.0.0
   test:
     runs-on: ubuntu-22.04
     steps:
@@ -19,3 +25,4 @@ jobs:
       - run: poetry install
       - run: poetry show --tree
       - run: poetry run pytest --cov
+      # TODO: coverage report

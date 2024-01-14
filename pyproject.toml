@@ -43,3 +43,22 @@ source = ["app"]
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
+
+# ruff
+# Ref: https://docs.astral.sh/ruff/configuration/
+# ------------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 120
+src = ["app"]
+target-version = "py311"
+
+[tool.ruff.lint]
+extend-select = [
+  "I",      # isort
+  "UP",     # pyupgrade
+  "RUF"     # ruff
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
