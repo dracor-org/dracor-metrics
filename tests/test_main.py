@@ -1,9 +1,11 @@
 from fastapi.testclient import TestClient
+
 from app.main import app
 
 client = TestClient(app)
 
 # Ref: https://fastapi.tiangolo.com/tutorial/testing/
+
 
 def test_root():
     response = client.get("/")
