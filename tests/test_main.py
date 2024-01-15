@@ -1,13 +1,22 @@
-import hug
-from falcon import HTTP_200
+from fastapi.testclient import TestClient
 
-from app import main
+from app.main import app
+
+client = TestClient(app)
+
+# Ref: https://fastapi.tiangolo.com/tutorial/testing/
+
+
+def test_root():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json()["service"] == "dracor-metrics"
 
 
 def test_metrics():
     segments = {"segments": [{"speakers": ["a", "b", "c"]}, {"speakers": ["a", "d"]}]}
-    response = hug.test.post(main, "metrics", segments)
-    assert response.status == HTTP_200
+    response = client.post("/metrics", json=segments)
+    assert response.status_code == 200
     expected = {
         "averageClustering": 0.5833333333333333,
         "averageDegree": 2.0,
@@ -50,4 +59,4 @@ def test_metrics():
         "numEdges": 4,
         "size": 4,
     }
-    assert response.data == expected
+    assert response.json() == expected

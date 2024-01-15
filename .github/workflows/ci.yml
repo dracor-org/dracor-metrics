@@ -7,6 +7,12 @@ on:
   pull_request:
 
 jobs:
+
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pre-commit/action@646c83fcd040023954eafda54b4db0192ce70507 # v3.0.0
   test:
     runs-on: ubuntu-22.04
     steps:
@@ -17,4 +23,10 @@ jobs:
           python-version: "3.11"
           cache: poetry
       - run: poetry install
-      - run: poetry run pytest
+      - run: poetry show --tree
+      - run: |
+          poetry run pytest --cov
+          poetry run python -m coverage report --format=markdown > coverage.md
+      - run: |
+          echo "### Code Coverage" >> $GITHUB_STEP_SUMMARY
+          cat coverage.md >> $GITHUB_STEP_SUMMARY
