@@ -24,5 +24,9 @@ jobs:
           cache: poetry
       - run: poetry install
       - run: poetry show --tree
-      - run: poetry run pytest --cov
-      # TODO: coverage report
+      - run: |
+          poetry run pytest --cov
+          poetry run python -m coverage report --format=markdown > coverage.md
+      - run: |
+          echo "### Code Coverage" >> $GITHUB_STEP_SUMMARY
+          cat coverage.md >> $GITHUB_STEP_SUMMARY
