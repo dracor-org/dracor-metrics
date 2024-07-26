@@ -8,6 +8,7 @@ Microservice calculating network metrics for dracor.org.
 git clone https://github.com/dracor-org/dracor-metrics.git
 cd dracor-metrics
 poetry install
+poetry run pytest
 poetry run uvicorn app.main:app --reload --port 8030
 ```
 
@@ -18,11 +19,11 @@ like this:
 
 ```
 $ http POST :8030/metrics 'segments:=[{"speakers": ["a", "b", "c"]}, {"speakers": ["a", "d"]}]'
-HTTP/1.0 200 OK
-Date: Wed, 13 Dec 2023 08:14:31 GMT
-Server: WSGIServer/0.2 CPython/3.11.6
-content-length: 729
-content-type: application/json; charset=utf-8
+HTTP/1.1 200 OK
+content-length: 665
+content-type: application/json
+date: Fri, 26 Jul 2024 19:24:55 GMT
+server: uvicorn
 
 {
     "averageClustering": 0.5833333333333333,
