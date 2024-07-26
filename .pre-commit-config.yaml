@@ -1,0 +1,25 @@
+# pre-commit
+# Ref: https://pre-commit.com/#usage
+# ------------------------------------------------------------------------------
+
+repos:
+  # Ref: https://pre-commit.com/#meta-hooks
+- repo: meta
+  hooks:
+  - id: check-hooks-apply
+
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+  - id: check-ast
+  - id: check-toml
+  - id: check-yaml
+  - id: end-of-file-fixer
+  - id: trailing-whitespace
+
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.1.13
+  hooks:
+  - id: ruff
+    args: [--fix, --show-fixes, --exit-non-zero-on-fix]
+  - id: ruff-format

@@ -1,28 +1,31 @@
 """DraCor metrics service"""
+
 import importlib
-import hug
+
 import networkx as nx
+from fastapi import FastAPI
+
+from .models import NodeInPlayMetrics, PlayMetrics, Segments, ServiceMetadata
+
+__version__: str = importlib.metadata.version("dracor-metrics")
+
+app = FastAPI()
 
 
-__version__ = importlib.metadata.version("dracor-metrics")
-
-@hug.get('/')
-def root():
-    return {
-        'service': 'dracor-metrics',
-        'version': __version__
-    }
+@app.get("/")
+async def root() -> ServiceMetadata:
+    return ServiceMetadata(version=__version__)
 
 
-@hug.post('/metrics')
-def metrics(segments):
+@app.post("/metrics")
+async def metrics(segments: Segments) -> PlayMetrics:
     """Calculates network metrics for play"""
 
     G = nx.Graph()
 
     weights = {}
-    for seg in segments:
-        speakers = seg.get('speakers', [])
+    for seg in segments.segments:
+        speakers = seg.speakers
         length = len(speakers)
         # if segment has only one speaker we add her as a node to make sure she
         # is included in the graph even if she has no connections
@@ -31,7 +34,7 @@ def metrics(segments):
         for i in range(length):
             if i < length - 1:
                 source = speakers[i]
-                others = speakers[i+1:length]
+                others = speakers[i + 1 : length]
                 for target in others:
                     edge = tuple(sorted((source, target)))
                     weights[edge] = weights.get(edge, 0) + 1
@@ -42,12 +45,10 @@ def metrics(segments):
     max_degree = max([d for n, d in G.degree()])
     max_degree_ids = [n for n, d in G.degree() if d == max_degree]
 
-    path_lengths = [
-        y for x in nx.shortest_path_length(G) for y in x[1].values() if y > 0
-    ]
+    path_lengths = [y for x in nx.shortest_path_length(G) for y in x[1].values() if y > 0]
 
     nodes = {}
-    wd = G.degree(None, 'weight')
+    wd = G.degree(None, "weight")
     cc = nx.closeness_centrality(G)
     bc = nx.betweenness_centrality(G)
     # FIXME: nx.eigenvector_centrality throws an exception with
@@ -59,30 +60,27 @@ def metrics(segments):
         ec = {}
 
     for n, d in G.degree():
-        nodes[n] = {
-            'degree': d,
-            'weightedDegree': wd[n],
-            'betweenness': bc[n],
-            'closeness': cc[n]
-        }
+        node_metrics = NodeInPlayMetrics(
+            degree=d,
+            weightedDegree=wd[n],
+            betweenness=bc[n],
+            closeness=cc[n],
+            eigenvector=None,
+        )
+        nodes[n] = node_metrics
         if n in ec:
-            nodes[n]['eigenvector'] = ec[n]
+            nodes[n].eigenvector = ec[n]
 
-    return {
-        'size': size,
-        'density': nx.density(G),
-        'diameter': max(path_lengths) if len(path_lengths) else 0,
-        'averagePathLength': (sum(path_lengths) / len(path_lengths))
-        if len(path_lengths) else 0,
-        'averageDegree': sum([d for n, d in G.degree()]) / size,
-        'averageClustering': nx.average_clustering(G),
-        'maxDegree': max_degree,
-        'maxDegreeIds': max_degree_ids,
-        'numConnectedComponents': nx.number_connected_components(G),
-        'numEdges': G.number_of_edges(),
-        'nodes': nodes
-    }
-
-
-if __name__ == '__main__':
-    metrics.interface.cli()
+    return PlayMetrics(
+        size=size,
+        density=nx.density(G),
+        diameter=max(path_lengths) if len(path_lengths) else 0,
+        averagePathLength=(sum(path_lengths) / len(path_lengths)) if len(path_lengths) else 0,
+        averageDegree=sum([d for n, d in G.degree()]) / size,
+        averageClustering=nx.average_clustering(G),
+        maxDegree=max_degree,
+        maxDegreeIds=max_degree_ids,
+        numConnectedComponents=nx.number_connected_components(G),
+        numEdges=G.number_of_edges(),
+        nodes=nodes,
+    )
