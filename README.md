@@ -26,7 +26,7 @@ date: Fri, 26 Jul 2024 19:24:55 GMT
 server: uvicorn
 
 {
-    "averageClustering": 0.5833333333333333,
+    "averageClustering": 0.5833333333333334,
     "averageDegree": 2.0,
     "averagePathLength": 1.3333333333333333,
     "density": 0.6666666666666666,

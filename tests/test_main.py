@@ -18,7 +18,7 @@ def test_metrics():
     response = client.post("/metrics", json=segments)
     assert response.status_code == 200
     expected = {
-        "averageClustering": 0.5833333333333333,
+        "averageClustering": 0.5833333333333334,
         "averageDegree": 2.0,
         "averagePathLength": 1.3333333333333333,
         "density": 0.6666666666666666,
