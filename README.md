@@ -2,17 +2,13 @@
 
 Microservice calculating network metrics for dracor.org.
 
-*Note: dracor-metrics does not yet run with Python 3.12. Since, via hug, we
-depend on distutils, which have been removed from 3.12, 3.11 is the latest
-supported Python version for now.*
-
 ## Getting started
 
 ```bash
 git clone https://github.com/dracor-org/dracor-metrics.git
 cd dracor-metrics
 poetry install
-poetry run hug -f app/main.py -p 8030
+poetry run uvicorn app.main:app --reload --port 8030
 ```
 
 This runs a local development server at http://localhost:8030.
