@@ -10,8 +10,8 @@ packages = [{include = "app"}]
 [tool.poetry.dependencies]
 python = "~3.12"
 networkx = "^3.3"
-fastapi = "^0.111.1"
-uvicorn = {extras = ["standard"], version = "^0.30.3"}
+fastapi = "^0.115.0"
+uvicorn = {extras = ["standard"], version = "^0.31.0"}
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.25.2"
