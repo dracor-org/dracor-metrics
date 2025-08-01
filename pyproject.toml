@@ -9,9 +9,9 @@ packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "~3.12"
-networkx = "^3.4"
-fastapi = "^0.115.12"
-uvicorn = {extras = ["standard"], version = "^0.34.3"}
+networkx = "^3.5"
+fastapi = "^0.115.14"
+uvicorn = {extras = ["standard"], version = "^0.35.0"}
 
 [tool.poetry.group.dev.dependencies]
 httpx = "^0.28.1"
