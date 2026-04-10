@@ -1,4 +1,3 @@
-# sticking to 3.12 for now as there are problems compiling dependencies on 3.13
 FROM python:3.14-slim
 
 WORKDIR /dracor-metrics
