@@ -1,4 +1,5 @@
-FROM python:3.14-slim
+# pydantic-core/pyo3 (<=0.24.1) does not support Python 3.14
+FROM python:3.13-slim
 
 WORKDIR /dracor-metrics
 
