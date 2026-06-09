@@ -80,6 +80,13 @@ docker pull dracor/metrics
 docker run -p 8030:8030 --rm dracor/metrics
 ```
 
+## Releasing
+
+1. Go to **Actions → Release → Run workflow** and enter the new version number (e.g. `1.5.3`)
+2. The workflow bumps the version in `pyproject.toml`, commits, tags, and opens a draft GitHub release
+3. Edit the release notes and click **Publish release**
+4. Publishing triggers the Docker build and pushes the new image to DockerHub as `dracor/metrics`
+
 ## License
 
 dracor-metrics is [MIT licensed](./LICENSE).
