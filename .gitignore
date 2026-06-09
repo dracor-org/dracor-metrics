@@ -1,6 +1,7 @@
 *.egg-info/
 *.pyc
 /.cache/
+/.claude/
 /.eggs/
 /.tox/
 /dist/
