@@ -22,6 +22,10 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
+      - name: Read Python version
+        id: python-version
+        run: echo "version=$(cat .python-version)" >> $GITHUB_OUTPUT
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
 
@@ -54,3 +58,4 @@ jobs:
             linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: PYTHON_VERSION=${{ steps.python-version.outputs.version }}
