@@ -1,8 +1,10 @@
 /.git/
 *.egg-info/
-*.pyc
+**/__pycache__/
+**/*.pyc
 /.cache/
 /.eggs/
 /.tox/
 /dist/
 /venv/
+/.venv/

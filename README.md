@@ -80,6 +80,9 @@ docker pull dracor/metrics
 docker run -p 8030:8030 --rm dracor/metrics
 ```
 
+The image runs as the non-root user ID `1001`. It also works under an arbitrary
+user ID, as assigned e.g. by OpenShift/OKD.
+
 ## Releasing
 
 1. Go to **Actions → Release → Run workflow** and enter the new version number (e.g. `1.5.3`)
