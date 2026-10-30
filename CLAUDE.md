@@ -40,4 +40,4 @@ This is a single-endpoint FastAPI microservice that computes social network metr
 
 **Releases**: Run the **Release** workflow (`release.yml`) via Actions → Run workflow, entering the new version (e.g. `1.5.3`). It bumps `version` in `pyproject.toml`, commits, tags, and opens a draft GitHub release. Edit the release notes, then publish — publishing triggers `docker-publish.yml` which builds and pushes the Docker image.
 
-**Python version**: `.python-version` is the single source of truth. `ci.yml` reads it via `python-version-file`, `docker-publish.yml` passes it as a `--build-arg`, and the Dockerfile uses `ARG PYTHON_VERSION=3.13` as a local fallback. When upgrading Python, update `.python-version` and the `python = "~3.x"` constraint in `pyproject.toml` together.
+**Python version**: `.python-version` is the single source of truth. `ci.yml` reads it via `python-version-file`, `docker-publish.yml` passes it as a `--build-arg`, and the Dockerfile uses `ARG PYTHON_VERSION=3.14` as a local fallback. When upgrading Python, update `.python-version` and the `python` constraint in `pyproject.toml` together.

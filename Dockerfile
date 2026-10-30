@@ -1,5 +1,4 @@
-# pydantic-core/pyo3 (<=0.24.1) does not support Python 3.14
-ARG PYTHON_VERSION=3.13
+ARG PYTHON_VERSION=3.14
 
 # Build stage: install the locked dependencies and the app (as a wheel) into a
 # standalone virtualenv, so that poetry itself does not end up in the image.
