@@ -11,7 +11,7 @@ packages = [{include = "app"}]
 # pydantic-core uses pyo3, which as of v0.24.1 only supports up to Python 3.13
 python = "~3.13"
 networkx = "^3.6"
-fastapi = ">=0.135.3,<0.142.0"
+fastapi = ">=0.135.3,<0.163.0"
 uvicorn = {extras = ["standard"], version = ">=0.44,<0.55"}
 # watchfiles 0.22 uses pyo3 0.21 which only supports Python <=3.12; >=0.24 adds 3.13 support
 watchfiles = ">=0.24"
