@@ -19,7 +19,7 @@ watchfiles = ">=0.24"
 uvloop = ">=0.20"
 
 [tool.poetry.group.dev.dependencies]
-httpx = "^0.28.1"
+httpx2 = "^2.16.0"
 pytest-cov = "^7.1.0"
 
 [build-system]
