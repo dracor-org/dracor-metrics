@@ -70,13 +70,6 @@ def test_metrics():
     assert response.json() == expected
 
 
-def test_metrics_trailing_slash():
-    segments = {"segments": [{"speakers": ["a", "b"]}]}
-    response = client.post("/metrics/", json=segments, follow_redirects=False)
-    assert response.status_code == 200
-    assert response.json()["size"] == 2
-
-
 @pytest.mark.parametrize("segments", [[], [{"speakers": []}, {"speakers": []}]])
 def test_metrics_empty_network(segments):
     response = client.post("/metrics", json={"segments": segments})

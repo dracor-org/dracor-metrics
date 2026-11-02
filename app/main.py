@@ -60,9 +60,7 @@ async def root() -> ServiceMetadata:
     return ServiceMetadata(version=__version__)
 
 
-# The DraCor API posts to /metrics/, which would otherwise be redirected.
 @app.post("/metrics")
-@app.post("/metrics/", include_in_schema=False)
 def metrics(segments: Segments) -> PlayMetrics:
     """Calculates network metrics for play"""
     # A plain def runs in the threadpool, so a large play doesn't block the
