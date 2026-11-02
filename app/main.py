@@ -1,13 +1,17 @@
 """DraCor metrics service"""
 
 import importlib
+import logging
 
 import networkx as nx
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 from .models import NodeInPlayMetrics, PlayMetrics, Segments, ServiceMetadata
 
 __version__: str = importlib.metadata.version("dracor-metrics")
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
@@ -17,10 +21,25 @@ async def root() -> ServiceMetadata:
     return ServiceMetadata(version=__version__)
 
 
+# The DraCor API posts to /metrics/, which would otherwise be redirected.
 @app.post("/metrics")
+@app.post("/metrics/", include_in_schema=False)
 async def metrics(segments: Segments) -> PlayMetrics:
     """Calculates network metrics for play"""
 
+    # An exception leaving the endpoint makes uvicorn close the connection
+    # after the 500 response has been sent. Clients that have already put the
+    # connection back into their pool (like the HTTP client of eXist-db) then
+    # fail on their next request with no response. Answering with an error
+    # response instead keeps the connection usable.
+    try:
+        return calculate(segments)
+    except Exception:
+        logger.exception("Failed to calculate metrics")
+        return JSONResponse(status_code=500, content={"detail": "Failed to calculate metrics"})
+
+
+def calculate(segments: Segments) -> PlayMetrics:
     G = nx.Graph()
 
     weights = {}
@@ -42,6 +61,22 @@ async def metrics(segments: Segments) -> PlayMetrics:
     G.add_weighted_edges_from([(n[0], n[1], w) for n, w in weights.items()])
 
     size = len(list(G.nodes))
+    if size == 0:
+        # no segment has any speakers, e.g. when no segments were found
+        return PlayMetrics(
+            size=0,
+            density=0,
+            diameter=0,
+            averagePathLength=0,
+            averageDegree=0,
+            averageClustering=0,
+            maxDegree=0,
+            maxDegreeIds=[],
+            numConnectedComponents=0,
+            numEdges=0,
+            nodes={},
+        )
+
     max_degree = max([d for n, d in G.degree()])
     max_degree_ids = [n for n, d in G.degree() if d == max_degree]
 
