@@ -6,6 +6,7 @@ import logging
 import networkx as nx
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from .models import NodeInPlayMetrics, PlayMetrics, Segments, ServiceMetadata
 
@@ -13,7 +14,45 @@ __version__: str = importlib.metadata.version("dracor-metrics")
 
 logger = logging.getLogger(__name__)
 
+
+class ErrorResponseMiddleware:
+    """Answers unhandled exceptions with a 500 response
+
+    An exception leaving the app makes uvicorn close the connection after the
+    500 response of Starlette's ServerErrorMiddleware has been sent. Clients
+    that have already put the connection back into their pool (like the HTTP
+    client of eXist-db) then fail on their next request with no response.
+    Answering with a regular response instead keeps the connection usable.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        response_started = False
+
+        async def send_wrapper(message: Message) -> None:
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_wrapper)
+        except Exception:
+            if response_started:
+                raise
+            logger.exception("Unhandled error in %s %s", scope["method"], scope["path"])
+            response = JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
+            await response(scope, receive, send)
+
+
 app = FastAPI()
+app.add_middleware(ErrorResponseMiddleware)
 
 
 @app.get("/")
@@ -24,19 +63,11 @@ async def root() -> ServiceMetadata:
 # The DraCor API posts to /metrics/, which would otherwise be redirected.
 @app.post("/metrics")
 @app.post("/metrics/", include_in_schema=False)
-async def metrics(segments: Segments) -> PlayMetrics:
+def metrics(segments: Segments) -> PlayMetrics:
     """Calculates network metrics for play"""
-
-    # An exception leaving the endpoint makes uvicorn close the connection
-    # after the 500 response has been sent. Clients that have already put the
-    # connection back into their pool (like the HTTP client of eXist-db) then
-    # fail on their next request with no response. Answering with an error
-    # response instead keeps the connection usable.
-    try:
-        return calculate(segments)
-    except Exception:
-        logger.exception("Failed to calculate metrics")
-        return JSONResponse(status_code=500, content={"detail": "Failed to calculate metrics"})
+    # A plain def runs in the threadpool, so a large play doesn't block the
+    # event loop.
+    return calculate(segments)
 
 
 def calculate(segments: Segments) -> PlayMetrics:

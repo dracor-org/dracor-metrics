@@ -111,19 +111,26 @@ def server():
     thread.join()
 
 
-def test_connection_usable_after_error(server, monkeypatch, caplog):
-    def fail(segments):
-        raise RuntimeError("boom")
+def fail_in_endpoint(segments):
+    raise RuntimeError("boom")
 
+
+def fail_in_response(segments):
+    # fails validation of the response, after the endpoint has returned
+    return {"size": "boom"}
+
+
+@pytest.mark.parametrize("calculate", [fail_in_endpoint, fail_in_response])
+def test_connection_usable_after_error(server, monkeypatch, caplog, calculate):
     body = json.dumps({"segments": [{"speakers": ["a", "b"]}]})
     headers = {"Content-Type": "application/json"}
     conn = http.client.HTTPConnection("127.0.0.1", server)
 
-    monkeypatch.setattr(main, "calculate", fail)
+    monkeypatch.setattr(main, "calculate", calculate)
     conn.request("POST", "/metrics", body, headers)
     response = conn.getresponse()
-    response.read()
     assert response.status == 500
+    assert json.loads(response.read()) == {"detail": "Internal Server Error"}
 
     # the second request goes over the same connection
     monkeypatch.undo()
@@ -133,4 +140,34 @@ def test_connection_usable_after_error(server, monkeypatch, caplog):
     assert json.loads(response.read())["size"] == 2
     conn.close()
 
-    assert "Failed to calculate metrics" in caplog.text
+    assert "Unhandled error in POST /metrics" in caplog.text
+
+
+def test_metrics_does_not_block(server, monkeypatch):
+    calculating = threading.Event()
+    done = threading.Event()
+    calculate = main.calculate
+
+    def slow(segments):
+        calculating.set()
+        done.wait(5)
+        return calculate(segments)
+
+    monkeypatch.setattr(main, "calculate", slow)
+    body = json.dumps({"segments": [{"speakers": ["a", "b"]}]})
+    headers = {"Content-Type": "application/json"}
+    conn = http.client.HTTPConnection("127.0.0.1", server)
+    conn.request("POST", "/metrics", body, headers)
+    assert calculating.wait(5)
+
+    # another request is answered while the metrics are being calculated
+    other = http.client.HTTPConnection("127.0.0.1", server, timeout=2)
+    other.request("GET", "/")
+    assert other.getresponse().status == 200
+    other.close()
+
+    done.set()
+    response = conn.getresponse()
+    assert response.status == 200
+    assert json.loads(response.read())["size"] == 2
+    conn.close()
