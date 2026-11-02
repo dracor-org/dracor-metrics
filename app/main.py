@@ -2,6 +2,7 @@
 
 import importlib
 import logging
+import threading
 
 import networkx as nx
 from fastapi import FastAPI
@@ -12,7 +13,12 @@ from .models import NodeInPlayMetrics, PlayMetrics, Segments, ServiceMetadata
 
 __version__: str = importlib.metadata.version("dracor-metrics")
 
-logger = logging.getLogger(__name__)
+# log like the errors uvicorn handles itself
+logger = logging.getLogger("uvicorn.error")
+
+# NetworkX holds the GIL, so calculating several plays at once wouldn't be
+# faster but would keep all their graphs in memory at the same time.
+calculation_lock = threading.Lock()
 
 
 class ErrorResponseMiddleware:
@@ -63,9 +69,11 @@ async def root() -> ServiceMetadata:
 @app.post("/metrics")
 def metrics(segments: Segments) -> PlayMetrics:
     """Calculates network metrics for play"""
-    # A plain def runs in the threadpool, so a large play doesn't block the
-    # event loop.
-    return calculate(segments)
+    # A plain def runs in the threadpool, so other requests are answered while
+    # the metrics are calculated (reading the request body still happens on
+    # the event loop).
+    with calculation_lock:
+        return calculate(segments)
 
 
 def calculate(segments: Segments) -> PlayMetrics:
@@ -90,23 +98,7 @@ def calculate(segments: Segments) -> PlayMetrics:
     G.add_weighted_edges_from([(n[0], n[1], w) for n, w in weights.items()])
 
     size = len(list(G.nodes))
-    if size == 0:
-        # no segment has any speakers, e.g. when no segments were found
-        return PlayMetrics(
-            size=0,
-            density=0,
-            diameter=0,
-            averagePathLength=0,
-            averageDegree=0,
-            averageClustering=0,
-            maxDegree=0,
-            maxDegreeIds=[],
-            numConnectedComponents=0,
-            numEdges=0,
-            nodes={},
-        )
-
-    max_degree = max([d for n, d in G.degree()])
+    max_degree = max([d for n, d in G.degree()], default=0)
     max_degree_ids = [n for n, d in G.degree() if d == max_degree]
 
     path_lengths = [y for x in nx.shortest_path_length(G) for y in x[1].values() if y > 0]
@@ -119,7 +111,7 @@ def calculate(segments: Segments) -> PlayMetrics:
     # https://dracor.org/api/corpora/rus/play/lermontov-strannyj-chelovek
     # we catch this here so we can still yield the rest of the metrics.
     try:
-        ec = nx.eigenvector_centrality(G)
+        ec = nx.eigenvector_centrality(G) if size else {}
     except nx.exception.PowerIterationFailedConvergence:
         ec = {}
 
@@ -140,8 +132,8 @@ def calculate(segments: Segments) -> PlayMetrics:
         density=nx.density(G),
         diameter=max(path_lengths) if len(path_lengths) else 0,
         averagePathLength=(sum(path_lengths) / len(path_lengths)) if len(path_lengths) else 0,
-        averageDegree=sum([d for n, d in G.degree()]) / size,
-        averageClustering=nx.average_clustering(G),
+        averageDegree=(sum([d for n, d in G.degree()]) / size) if size else 0,
+        averageClustering=nx.average_clustering(G) if size else 0,
         maxDegree=max_degree,
         maxDegreeIds=max_degree_ids,
         numConnectedComponents=nx.number_connected_components(G),

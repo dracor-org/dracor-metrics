@@ -92,16 +92,20 @@ def test_metrics_empty_network(segments):
 @pytest.fixture
 def server():
     """Run the app with uvicorn, which (unlike TestClient) handles connections"""
-    config = uvicorn.Config(app, host="127.0.0.1", port=0, log_level="critical")
+    # log_config=None leaves the logging setup (and caplog) alone
+    config = uvicorn.Config(app, host="127.0.0.1", port=0, log_config=None)
     server = uvicorn.Server(config)
     thread = threading.Thread(target=server.run, daemon=True)
     thread.start()
+    deadline = time.monotonic() + 5
     while not server.started:
+        assert thread.is_alive(), "server failed to start"
+        assert time.monotonic() < deadline, "server didn't start in time"
         time.sleep(0.01)
     port = server.servers[0].sockets[0].getsockname()[1]
     yield port
     server.should_exit = True
-    thread.join()
+    thread.join(5)
 
 
 def fail_in_endpoint(segments):
@@ -136,31 +140,48 @@ def test_connection_usable_after_error(server, monkeypatch, caplog, calculate):
     assert "Unhandled error in POST /metrics" in caplog.text
 
 
-def test_metrics_does_not_block(server, monkeypatch):
+def post_metrics(port, speakers):
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+    body = json.dumps({"segments": [{"speakers": speakers}]})
+    conn.request("POST", "/metrics", body, {"Content-Type": "application/json"})
+    return conn
+
+
+def test_metrics_concurrency(server, monkeypatch):
+    started = []
     calculating = threading.Event()
     done = threading.Event()
     calculate = main.calculate
 
     def slow(segments):
+        started.append(segments)
         calculating.set()
         done.wait(5)
         return calculate(segments)
 
     monkeypatch.setattr(main, "calculate", slow)
-    body = json.dumps({"segments": [{"speakers": ["a", "b"]}]})
-    headers = {"Content-Type": "application/json"}
-    conn = http.client.HTTPConnection("127.0.0.1", server)
-    conn.request("POST", "/metrics", body, headers)
-    assert calculating.wait(5)
+    conns = []
+    try:
+        conns.append(post_metrics(server, ["a", "b"]))
+        assert calculating.wait(5)
 
-    # another request is answered while the metrics are being calculated
-    other = http.client.HTTPConnection("127.0.0.1", server, timeout=2)
-    other.request("GET", "/")
-    assert other.getresponse().status == 200
-    other.close()
+        # another request is answered while the metrics are being calculated
+        conns.append(http.client.HTTPConnection("127.0.0.1", server, timeout=2))
+        conns[-1].request("GET", "/")
+        assert conns[-1].getresponse().status == 200
 
-    done.set()
-    response = conn.getresponse()
-    assert response.status == 200
-    assert json.loads(response.read())["size"] == 2
-    conn.close()
+        # a second calculation waits for the first one
+        conns.append(post_metrics(server, ["a", "b", "c"]))
+        time.sleep(0.2)
+        assert len(started) == 1
+    finally:
+        done.set()
+
+    first, second = conns[0].getresponse(), conns[2].getresponse()
+    assert first.status == 200
+    assert json.loads(first.read())["size"] == 2
+    assert second.status == 200
+    assert json.loads(second.read())["size"] == 3
+    assert len(started) == 2
+    for conn in conns:
+        conn.close()
