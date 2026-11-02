@@ -81,7 +81,8 @@ def calculate(segments: Segments) -> PlayMetrics:
 
     weights = {}
     for seg in segments.segments:
-        speakers = seg.speakers
+        # a speaker listed twice would otherwise get an edge to themselves
+        speakers = list(dict.fromkeys(seg.speakers))
         length = len(speakers)
         # if segment has only one speaker we add her as a node to make sure she
         # is included in the graph even if she has no connections

@@ -89,6 +89,17 @@ def test_metrics_empty_network(segments):
     }
 
 
+def test_metrics_duplicate_speakers():
+    segments = {"segments": [{"speakers": ["a", "b", "a"]}, {"speakers": ["c", "c"]}]}
+    response = client.post("/metrics", json=segments)
+    assert response.status_code == 200
+    metrics = response.json()
+    assert metrics["numEdges"] == 1
+    assert metrics["nodes"]["a"]["degree"] == 1
+    assert metrics["nodes"]["a"]["weightedDegree"] == 1
+    assert metrics["nodes"]["c"]["degree"] == 0
+
+
 @pytest.fixture
 def server():
     """Run the app with uvicorn, which (unlike TestClient) handles connections"""
