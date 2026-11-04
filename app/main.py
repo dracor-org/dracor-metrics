@@ -2,11 +2,12 @@
 
 import importlib
 import logging
-import threading
 
+import anyio
 import networkx as nx
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
+from starlette.concurrency import run_in_threadpool
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from .models import NodeInPlayMetrics, PlayMetrics, Segments, ServiceMetadata
@@ -18,7 +19,7 @@ logger = logging.getLogger("uvicorn.error")
 
 # NetworkX holds the GIL, so calculating several plays at once wouldn't be
 # faster but would keep all their graphs in memory at the same time.
-calculation_lock = threading.Lock()
+calculation_lock = anyio.Lock()
 
 
 class ErrorResponseMiddleware:
@@ -67,13 +68,14 @@ async def root() -> ServiceMetadata:
 
 
 @app.post("/metrics")
-def metrics(segments: Segments) -> PlayMetrics:
+async def metrics(segments: Segments) -> PlayMetrics:
     """Calculates network metrics for play"""
-    # A plain def runs in the threadpool, so other requests are answered while
-    # the metrics are calculated (reading the request body still happens on
-    # the event loop).
-    with calculation_lock:
-        return calculate(segments)
+    # Requests wait for the lock on the event loop, in order, without taking
+    # a threadpool slot. The calculation runs in the threadpool, so other
+    # requests are answered meanwhile (reading the request body still happens
+    # on the event loop).
+    async with calculation_lock:
+        return await run_in_threadpool(calculate, segments)
 
 
 def calculate(segments: Segments) -> PlayMetrics:

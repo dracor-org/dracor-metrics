@@ -128,25 +128,27 @@ def fail_in_response(segments):
     return {"size": "boom"}
 
 
+@pytest.mark.unhandled_errors
 @pytest.mark.parametrize("calculate", [fail_in_endpoint, fail_in_response])
 def test_connection_usable_after_error(server, monkeypatch, caplog, calculate):
     body = json.dumps({"segments": [{"speakers": ["a", "b"]}]})
     headers = {"Content-Type": "application/json"}
-    conn = http.client.HTTPConnection("127.0.0.1", server)
+    conn = http.client.HTTPConnection("127.0.0.1", server, timeout=5)
+    try:
+        monkeypatch.setattr(main, "calculate", calculate)
+        conn.request("POST", "/metrics", body, headers)
+        response = conn.getresponse()
+        assert response.status == 500
+        assert json.loads(response.read()) == {"detail": "Internal Server Error"}
 
-    monkeypatch.setattr(main, "calculate", calculate)
-    conn.request("POST", "/metrics", body, headers)
-    response = conn.getresponse()
-    assert response.status == 500
-    assert json.loads(response.read()) == {"detail": "Internal Server Error"}
-
-    # the second request goes over the same connection
-    monkeypatch.undo()
-    conn.request("POST", "/metrics", body, headers)
-    response = conn.getresponse()
-    assert response.status == 200
-    assert json.loads(response.read())["size"] == 2
-    conn.close()
+        # the second request goes over the same connection
+        monkeypatch.undo()
+        conn.request("POST", "/metrics", body, headers)
+        response = conn.getresponse()
+        assert response.status == 200
+        assert json.loads(response.read())["size"] == 2
+    finally:
+        conn.close()
 
     assert "Unhandled error in POST /metrics" in caplog.text
 
@@ -185,14 +187,15 @@ def test_metrics_concurrency(server, monkeypatch):
         conns.append(post_metrics(server, ["a", "b", "c"]))
         time.sleep(0.2)
         assert len(started) == 1
+
+        done.set()
+        first, second = conns[0].getresponse(), conns[2].getresponse()
+        assert first.status == 200
+        assert json.loads(first.read())["size"] == 2
+        assert second.status == 200
+        assert json.loads(second.read())["size"] == 3
+        assert len(started) == 2
     finally:
         done.set()
-
-    first, second = conns[0].getresponse(), conns[2].getresponse()
-    assert first.status == 200
-    assert json.loads(first.read())["size"] == 2
-    assert second.status == 200
-    assert json.loads(second.read())["size"] == 3
-    assert len(started) == 2
-    for conn in conns:
-        conn.close()
+        for conn in conns:
+            conn.close()
