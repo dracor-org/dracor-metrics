@@ -110,11 +110,13 @@ def calculate(segments: Segments) -> PlayMetrics:
     wd = G.degree(None, "weight")
     cc = nx.closeness_centrality(G)
     bc = nx.betweenness_centrality(G)
-    # FIXME: nx.eigenvector_centrality throws an exception with
-    # https://dracor.org/api/corpora/rus/play/lermontov-strannyj-chelovek
-    # we catch this here so we can still yield the rest of the metrics.
+    # Power iteration converges slowly when the graph has several components
+    # with similar leading eigenvalues (e.g. kraus-die-letzten-tage-der-menschheit
+    # and lermontov-strannyj-chelovek), so the default of 100 iterations isn't
+    # enough. If it still fails we catch this here so we can still yield the
+    # rest of the metrics.
     try:
-        ec = nx.eigenvector_centrality(G) if size else {}
+        ec = nx.eigenvector_centrality(G, max_iter=1000) if size else {}
     except nx.exception.PowerIterationFailedConvergence:
         ec = {}
 

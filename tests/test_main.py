@@ -100,6 +100,17 @@ def test_metrics_duplicate_speakers():
     assert metrics["nodes"]["c"]["degree"] == 0
 
 
+def test_metrics_eigenvector_slow_convergence():
+    # a star and a separate path, whose leading eigenvalues are close enough
+    # that power iteration needs more than the default 100 iterations
+    star = [{"speakers": ["a", leaf]} for leaf in ["b", "c", "d"]]
+    path = [{"speakers": pair} for pair in [["e", "f"], ["f", "g"], ["g", "h"]]]
+    response = client.post("/metrics", json={"segments": star + path})
+    assert response.status_code == 200
+    nodes = response.json()["nodes"]
+    assert all(node["eigenvector"] is not None for node in nodes.values())
+
+
 @pytest.fixture
 def server():
     """Run the app with uvicorn, which (unlike TestClient) handles connections"""
