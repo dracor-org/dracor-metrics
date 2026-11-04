@@ -35,6 +35,7 @@ minversion = "7.0"
 addopts = ["-ra", "--showlocals"]
 filterwarnings = ["error"]
 testpaths = "tests"
+markers = ["unhandled_errors: the test expects requests to fail with an unhandled error"]
 
 # coverage.py
 # Ref: https://coverage.readthedocs.io/en/latest/config.html
