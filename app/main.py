@@ -2,6 +2,7 @@
 
 import importlib
 import logging
+import math
 
 import anyio
 import networkx as nx
@@ -78,6 +79,32 @@ async def metrics(segments: Segments) -> PlayMetrics:
         return await run_in_threadpool(calculate, segments)
 
 
+def eigenvector_centrality(G: nx.Graph) -> dict:
+    """Calculates eigenvector centrality for each connected component
+
+    On the whole graph power iteration only converges once all components but
+    the dominant one have shrunk to (almost) zero, which can take very long
+    (e.g. kraus-die-letzten-tage-der-menschheit) and leaves meaningless values
+    outside that component. Each component's values are scaled by the square
+    root of its share of nodes, so that without isolated nodes (which get 0)
+    the whole vector still has unit length. Nodes of a component that doesn't
+    converge are left out, so we can still yield the rest of the metrics.
+    """
+    ec = {}
+    for component in nx.connected_components(G):
+        if len(component) == 1:
+            ec.update(dict.fromkeys(component, 0.0))
+            continue
+        try:
+            values = nx.eigenvector_centrality(G.subgraph(component))
+        except nx.exception.PowerIterationFailedConvergence:
+            logger.warning("Eigenvector centrality failed to converge for %d nodes", len(component))
+            continue
+        scale = math.sqrt(len(component) / len(G))
+        ec.update((n, v * scale) for n, v in values.items())
+    return ec
+
+
 def calculate(segments: Segments) -> PlayMetrics:
     G = nx.Graph()
 
@@ -110,15 +137,7 @@ def calculate(segments: Segments) -> PlayMetrics:
     wd = G.degree(None, "weight")
     cc = nx.closeness_centrality(G)
     bc = nx.betweenness_centrality(G)
-    # Power iteration converges slowly when the graph has several components
-    # with similar leading eigenvalues (e.g. kraus-die-letzten-tage-der-menschheit
-    # and lermontov-strannyj-chelovek), so the default of 100 iterations isn't
-    # enough. If it still fails we catch this here so we can still yield the
-    # rest of the metrics.
-    try:
-        ec = nx.eigenvector_centrality(G, max_iter=1000) if size else {}
-    except nx.exception.PowerIterationFailedConvergence:
-        ec = {}
+    ec = eigenvector_centrality(G)
 
     for n, d in G.degree():
         node_metrics = NodeInPlayMetrics(
