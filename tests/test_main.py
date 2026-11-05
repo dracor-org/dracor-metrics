@@ -1,5 +1,6 @@
 import http.client
 import json
+import math
 import threading
 import time
 
@@ -98,6 +99,26 @@ def test_metrics_duplicate_speakers():
     assert metrics["nodes"]["a"]["degree"] == 1
     assert metrics["nodes"]["a"]["weightedDegree"] == 1
     assert metrics["nodes"]["c"]["degree"] == 0
+
+
+def test_metrics_eigenvector_components():
+    # a star and a separate path, whose leading eigenvalues are close enough
+    # that power iteration on the whole graph needs more than 100 iterations
+    star = [{"speakers": ["a", leaf]} for leaf in ["b", "c", "d"]]
+    path = [{"speakers": pair} for pair in [["e", "f"], ["f", "g"], ["g", "h"]]]
+    response = client.post("/metrics", json={"segments": [*star, *path, {"speakers": ["i"]}]})
+    assert response.status_code == 200
+    eigenvector = {n: node["eigenvector"] for n, node in response.json()["nodes"].items()}
+    # each component scaled by the square root of its share of the 9 nodes
+    scale = math.sqrt(4 / 9)
+    expected = {
+        "a": math.sqrt(1 / 2) * scale,
+        **dict.fromkeys(["b", "c", "d"], math.sqrt(1 / 6) * scale),
+        **dict.fromkeys(["e", "h"], math.sin(math.pi / 5) / math.sqrt(5 / 2) * scale),
+        **dict.fromkeys(["f", "g"], math.sin(2 * math.pi / 5) / math.sqrt(5 / 2) * scale),
+        "i": 0.0,
+    }
+    assert eigenvector == pytest.approx(expected, abs=1e-4)
 
 
 @pytest.fixture
