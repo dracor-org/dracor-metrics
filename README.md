@@ -20,7 +20,7 @@ like this:
 ```
 $ http POST :8030/metrics 'segments:=[{"speakers": ["a", "b", "c"]}, {"speakers": ["a", "d"]}]'
 HTTP/1.1 200 OK
-content-length: 665
+content-length: 739
 content-type: application/json
 date: Fri, 26 Jul 2024 19:24:55 GMT
 server: uvicorn
@@ -67,9 +67,18 @@ server: uvicorn
     },
     "numConnectedComponents": 1,
     "numEdges": 4,
+    "service": {
+        "networkx": "3.7",
+        "service": "dracor-metrics",
+        "version": "1.6.0"
+    },
     "size": 4
 }
 ```
+
+The `service` object tells which versions of the service and of
+[NetworkX](https://networkx.org) calculated the metrics. `GET /` returns the
+same object.
 
 ## Docker
 
