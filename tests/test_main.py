@@ -3,6 +3,7 @@ import json
 import threading
 import time
 
+import networkx as nx
 import pytest
 import uvicorn
 from fastapi.testclient import TestClient
@@ -12,13 +13,15 @@ from app.main import app
 
 client = TestClient(app)
 
+service = {"service": "dracor-metrics", "version": main.__version__, "networkx": nx.__version__}
+
 # Ref: https://fastapi.tiangolo.com/tutorial/testing/
 
 
 def test_root():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json()["service"] == "dracor-metrics"
+    assert response.json() == service
 
 
 def test_metrics():
@@ -65,6 +68,7 @@ def test_metrics():
         },
         "numConnectedComponents": 1,
         "numEdges": 4,
+        "service": service,
         "size": 4,
     }
     assert response.json() == expected
@@ -85,6 +89,7 @@ def test_metrics_empty_network(segments):
         "nodes": {},
         "numConnectedComponents": 0,
         "numEdges": 0,
+        "service": service,
         "size": 0,
     }
 

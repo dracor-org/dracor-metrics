@@ -14,6 +14,10 @@ from .models import NodeInPlayMetrics, PlayMetrics, Segments, ServiceMetadata
 
 __version__: str = importlib.metadata.version("dracor-metrics")
 
+# included in every response so that clients can tell which versions
+# calculated the metrics they store
+service_metadata = ServiceMetadata(version=__version__, networkx=nx.__version__)
+
 # log like the errors uvicorn handles itself
 logger = logging.getLogger("uvicorn.error")
 
@@ -64,7 +68,7 @@ app.add_middleware(ErrorResponseMiddleware)
 
 @app.get("/")
 async def root() -> ServiceMetadata:
-    return ServiceMetadata(version=__version__)
+    return service_metadata
 
 
 @app.post("/metrics")
@@ -142,4 +146,5 @@ def calculate(segments: Segments) -> PlayMetrics:
         numConnectedComponents=nx.number_connected_components(G),
         numEdges=G.number_of_edges(),
         nodes=nodes,
+        service=service_metadata,
     )

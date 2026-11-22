@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class ServiceMetadata(BaseModel):
     service: str = "dracor-metrics"
     version: str
+    networkx: str
 
 
 class Segment(BaseModel):
@@ -36,3 +37,4 @@ class PlayMetrics(BaseModel):
     numConnectedComponents: int
     numEdges: int
     nodes: dict[str, NodeInPlayMetrics]
+    service: ServiceMetadata

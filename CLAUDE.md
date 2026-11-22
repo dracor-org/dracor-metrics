@@ -36,7 +36,7 @@ This is a single-endpoint FastAPI microservice that computes social network metr
 - Single-speaker segments add isolated nodes so all speakers appear in the output even with no co-appearances
 - Eigenvector centrality failures (`PowerIterationFailedConvergence`) are caught and return `None` for all nodes
 
-**Models** (`app/models.py`): `Segment` → `Segments` (input); `NodeInPlayMetrics` + `PlayMetrics` (output); `ServiceMetadata` (root endpoint).
+**Models** (`app/models.py`): `Segment` → `Segments` (input); `NodeInPlayMetrics` + `PlayMetrics` (output); `ServiceMetadata` (root endpoint, and `service` in every `PlayMetrics`).
 
 **Releases**: Run the **Release** workflow (`release.yml`) via Actions → Run workflow, entering the new version (e.g. `1.5.3`). It bumps `version` in `pyproject.toml`, commits, tags, and opens a draft GitHub release. Edit the release notes, then publish — publishing triggers `docker-publish.yml` which builds and pushes the Docker image.
 
